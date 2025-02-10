@@ -46,16 +46,56 @@ def parsedata(freq, storyNum, hemi):
 		print(f"Read ROI: {anROInumber}")
 	
 	return rois
+	
+def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile):
+	plt.figure()
+	
+	if not os.path.exists(saveDir):
+		print(f"Directory '{saveDir}' does not exist. Creating it...")
+		os.makedirs(saveDir)
+	os.chdir(saveDir)
+	
+	
+	step = 15
+	
+	meanMHV = mean_data["HV"] - std_data["HV"]
+	meanPHV = mean_data["HV"] + std_data["HV"]
+	
+	meanMMDD = mean_data["MD"] - std_data["MD"]
+	meanPMDD = mean_data["MD"] + std_data["MD"]
+	
+	plt.figure(figsize=(16, 6))
+	plt.plot(mean_data.index[::step], mean_data["HV"][::step], label="HV", color="blue")
+	plt.plot(mean_data.index[::step], mean_data["MD"][::step], label="MD", color="green")
+	
+	x = np.arange(len(mean_data)) #still silly this needs to be added
+	
+	plt.fill_between(x[::step], 
+					 meanMHV[::step],
+					 meanPHV[::step], 
+					 color='green', alpha=0.2, label='HV St.Dev')
+	
+	plt.fill_between(x[::step], 
+					 meanMMDD[::step],
+					 meanPMDD[::step], 
+					 color='blue', alpha=0.2, label='MDD St.Dev')
+	
+	plt.title('Average Time Series with Standard Deviation')
+	plt.xlabel('Time')
+	plt.ylabel('Source Values')
+	plt.legend()
+	#plt.show()
+	plt.savefig(f"{nameFile}.png")
 
-def make_average_time_plots(roi_data):
+def make_average_time_plots(roi_data, saveDir):
 	
 	#for anROI in range(0,len(roi_data)):
 	for anROI in range(0,1):
 		df = roi_data[anROI]
 		
-		print(df)
-		print(type(df))
-		print(df.shape)
+		#print(df)
+		#print(type(df))
+		#print(df.shape)
 		corr_matrix = df.corr()
 		#print(corr_matrix)
 		#print(corr_matrix.shape)
@@ -64,10 +104,55 @@ def make_average_time_plots(roi_data):
 		fig = heatplot.get_figure()
 		fig.savefig(f"corr_{anROI}.png")
 		
+		group_data = df.transpose()
+		#the columns at this point say ???_??_freq
 		
+		group_data['subject_number'] = group_data.index.str.split('_').str[0].astype(int)
+		#print(group_data)
 		
+		group_data['Group'] = pd.NA #probably not necessary but was getting an error in previous pandas version
+		group_data['Group'] = group_data['subject_number'].apply(lambda x: 'MD' if 100 <= x < 200 else 'HV')
 		
+		#print(f"{group_data['subject_number']} {group_data['Group']}")
 		
+		groupmean = group_data.groupby('Group').mean().transpose()
+		groupstd = group_data.groupby('Group').std().transpose()
+		
+		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_plot_{anROI}")
+		
+def make_correlation_time_plots(roi_data, outputDir):
+	for anROI in range(0,1):
+		df = roi_data[anROI]
+		
+		group_data = df.transpose()
+		#the columns at this point say ???_??_freq
+		
+		group_data['subject_number'] = group_data.index.str.split('_').str[0].astype(int)
+		#print(group_data)
+		
+		group_data['Group'] = pd.NA #probably not necessary but was getting an error in previous pandas version
+		group_data['Group'] = group_data['subject_number'].apply(lambda x: 'MD' if 100 <= x < 200 else 'HV')
+		
+		#print(f"{group_data['subject_number']} {group_data['Group']}")
+		
+		MD_data = group_data[group_data['Group'] == 'MD']
+		HV_data = group_data[group_data['Group'] == 'HV']
+		
+		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_corr_plot_{anROI}")
+		
+def saveROIfiles(ListofROIs, outputDir, freq, hemi):
+	if not os.path.exists(outputDir):
+		print(f"Directory '{outputDir}' does not exist. Creating it...")
+		os.makedirs(outputDir)
+	os.chdir(outputDir)
+	
+	ct=1
+	for anROI in ListofROIs:
+		anROI.to_csv(f"ROI_{freq}_{hemi}_{ct}.csv", index=False)
+		ct += 1
+	
+	
+	
 
 
 def main():
@@ -105,25 +190,45 @@ def main():
 		required=True
 	)
 	
+	parser.add_argument(
+		'--saveROI',
+		help='Save ROI data to output directory',
+		action='store_true'
+	)
+	
+	parser.add_argument(
+		'--outputDir',
+		help='Output directory for files',
+		default='tmpOut'
+	)
+	
 
 	args = parser.parse_args()
 	folderpath = args.roi_folder[0]
 	freq = args.frequency[0]
 	storyNum = args.storyNum[0]
 	hemi = args.hemi[0]
+	outputDir = args.outputDir
+	saveROIs = args.saveROI
 	
 	print(folderpath)
 	print(freq)
 	print(storyNum)
 	print(hemi)
+	print(args.saveROI)
 	
 	cwd = os.getcwd()
 	os.chdir(f"{folderpath}/{freq}")
 	
 	roi_data = parsedata(freq, storyNum, hemi)
 	os.chdir(cwd)
-	make_average_time_plots(roi_data)
-	#make_correlation_time_plots(roi_data)
+	
+	if saveROIs == True:
+		saveROIfiles(roi_data, outputDir, freq, hemi)
+	
+	make_average_time_plots(roi_data, outputDir)
+	
+	make_correlation_time_plots(roi_data, outputDir)
 
 
 if __name__ == '__main__':
