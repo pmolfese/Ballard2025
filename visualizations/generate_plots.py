@@ -92,13 +92,7 @@ def make_average_time_plots(roi_data, saveDir):
 	#for anROI in range(0,len(roi_data)):
 	for anROI in range(0,1):
 		df = roi_data[anROI]
-		
-		#print(df)
-		#print(type(df))
-		#print(df.shape)
 		corr_matrix = df.corr()
-		#print(corr_matrix)
-		#print(corr_matrix.shape)
 		plt.figure()
 		heatplot = sns.heatmap(corr_matrix, annot=False, cmap='coolwarm')
 		fig = heatplot.get_figure()
