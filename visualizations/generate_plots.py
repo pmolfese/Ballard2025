@@ -114,7 +114,7 @@ def make_average_time_plots(roi_data, saveDir):
 		
 		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_plot_{anROI}")
 		
-def make_correlation_time_plots(roi_data, outputDir):
+def make_correlation_time_plots(roi_data, saveDir):
 	for anROI in range(0,1):
 		df = roi_data[anROI]
 		
@@ -131,6 +131,30 @@ def make_correlation_time_plots(roi_data, outputDir):
 		
 		MD_data = group_data[group_data['Group'] == 'MD']
 		HV_data = group_data[group_data['Group'] == 'HV']
+		
+		#rolling rolling rolling on an average
+		roll_corr_HV = HV_data.rolling(window=10).corr()
+		roll_corr_HV.index.names = ['A','B']
+		roll_corr_HV_Z = roll_corr_HV.applymap(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		
+		roll_corr_MD = MDDcorr.rolling(window=10).corr()
+		roll_corr_MD.index.names = ['A','B']
+		roll_corrMD_Z = roll_corr_MD.applymap(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		
+		roll_corr_aveHV = roll_corr_HV_Z.groupby(level='A').mean()
+		roll_corr_stdHV = roll_corr_HV_Z.groupby(level='A').std()
+		
+		roll_corr_aveMD = roll_corrMD_Z.groupby(level='A').mean()
+		roll_corr_stdMD = roll_corrMD_Z.groupby(level='A').std()
+		
+		ra_HV = roll_corr_aveHV.mean(axis=1) 
+		rs_HV = roll_corr_stdHV.mean(axis=1)
+		
+		ra_MD = roll_corr_aveMD.mean(axis=1)
+		rs_MD = roll_corr_stdMD.mean(axis=1)
+		
+		groupmean = pd.DataFrame({'MD': ra_MD, 'HV': ra_HV})
+		groupstd = pd.DataFrame({'MD': ra_MD, 'HV': ra_HV})
 		
 		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_corr_plot_{anROI}")
 		
