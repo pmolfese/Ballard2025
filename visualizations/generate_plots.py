@@ -47,7 +47,7 @@ def parsedata(freq, storyNum, hemi):
 	
 	return rois
 	
-def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile):
+def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Average Time Series with Std. Error"):
 	plt.figure()
 	
 	if not os.path.exists(saveDir):
@@ -55,6 +55,8 @@ def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile):
 		os.makedirs(saveDir)
 	os.chdir(saveDir)
 	
+	#mean_data.to_csv(f"{nameFile}_mean.txt")
+	#std_data.to_csv(f"{nameFile}_sem.txt")
 	
 	step = 15
 	
@@ -80,9 +82,9 @@ def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile):
 					 meanPMDD[::step], 
 					 color='blue', alpha=0.2, label='MDD St.Dev')
 	
-	plt.title('Average Time Series with Standard Deviation')
+	plt.title(title)
 	plt.xlabel('Time')
-	plt.ylabel('Source Values')
+	plt.ylabel('Values')
 	plt.legend()
 	#plt.show()
 	plt.savefig(f"{nameFile}.png")
@@ -132,14 +134,24 @@ def make_correlation_time_plots(roi_data, saveDir):
 		MD_data = group_data[group_data['Group'] == 'MD']
 		HV_data = group_data[group_data['Group'] == 'HV']
 		
-		#rolling rolling rolling on an average
-		roll_corr_HV = HV_data.rolling(window=10).corr()
-		roll_corr_HV.index.names = ['A','B']
-		roll_corr_HV_Z = roll_corr_HV.applymap(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		MD_data = MD_data.drop('Group', axis=1)
+		HV_data = HV_data.drop('Group', axis=1)
+		MD_data = MD_data.drop('subject_number', axis=1)
+		HV_data = HV_data.drop('subject_number', axis=1)
 		
-		roll_corr_MD = MDDcorr.rolling(window=10).corr()
+		MD_data_t = MD_data.transpose()
+		HV_data_t = HV_data.transpose()
+		
+		#rolling rolling rolling on an average
+		print("making rolling")
+		
+		roll_corr_HV = HV_data_t.rolling(window=5).corr()
+		roll_corr_HV.index.names = ['A','B']
+		roll_corr_HV_Z = roll_corr_HV.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		
+		roll_corr_MD = MD_data_t.rolling(window=5).corr()
 		roll_corr_MD.index.names = ['A','B']
-		roll_corrMD_Z = roll_corr_MD.applymap(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		roll_corrMD_Z = roll_corr_MD.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
 		
 		roll_corr_aveHV = roll_corr_HV_Z.groupby(level='A').mean()
 		roll_corr_stdHV = roll_corr_HV_Z.groupby(level='A').std()
@@ -147,6 +159,7 @@ def make_correlation_time_plots(roi_data, saveDir):
 		roll_corr_aveMD = roll_corrMD_Z.groupby(level='A').mean()
 		roll_corr_stdMD = roll_corrMD_Z.groupby(level='A').std()
 		
+		print("making average")
 		ra_HV = roll_corr_aveHV.mean(axis=1) 
 		rs_HV = roll_corr_stdHV.mean(axis=1)
 		
@@ -154,9 +167,9 @@ def make_correlation_time_plots(roi_data, saveDir):
 		rs_MD = roll_corr_stdMD.mean(axis=1)
 		
 		groupmean = pd.DataFrame({'MD': ra_MD, 'HV': ra_HV})
-		groupstd = pd.DataFrame({'MD': ra_MD, 'HV': ra_HV})
+		groupstd = pd.DataFrame({'MD': rs_MD, 'HV': rs_HV})
 		
-		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_corr_plot_{anROI}")
+		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_corr_plot_{anROI}", "Average Correlation with Std. Error")
 		
 def saveROIfiles(ListofROIs, outputDir, freq, hemi):
 	if not os.path.exists(outputDir):
