@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import zscore
 import os
 import glob
 import argparse
@@ -34,7 +35,7 @@ def readROIFiles(filesArr, ROInumber):
 
 
 def parsedata(freq, storyNum, hemi):
-	all_files = glob.glob(f"*_{storyNum}_{freq}_std-{hemi}.txt")
+	all_files = 	glob(f"*_{storyNum}_{freq}_std-{hemi}.txt")
 	all_files.sort()
 	
 	numROIs = getShapeFile(all_files[0])
@@ -47,7 +48,12 @@ def parsedata(freq, storyNum, hemi):
 	
 	return rois
 	
-def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Average Time Series with Std. Error"):
+def standardizeData(aDataFrame):
+	#this function takes a data frame and returns a standard z-score transformed one
+	df_zscored = aDataFrame.apply(zscore)
+	return df_zscored
+	
+def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Average Time Series with Std. Dev"):
 	plt.figure()
 	
 	if not os.path.exists(saveDir):
@@ -58,7 +64,7 @@ def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Aver
 	#mean_data.to_csv(f"{nameFile}_mean.txt")
 	#std_data.to_csv(f"{nameFile}_sem.txt")
 	
-	step = 15
+	step = 10
 	
 	meanMHV = mean_data["HV"] - std_data["HV"]
 	meanPHV = mean_data["HV"] + std_data["HV"]
@@ -75,12 +81,12 @@ def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Aver
 	plt.fill_between(x[::step], 
 					 meanMHV[::step],
 					 meanPHV[::step], 
-					 color='green', alpha=0.2, label='HV St.Dev')
+					 color='blue', alpha=0.2, label='HV St.Dev')
 	
 	plt.fill_between(x[::step], 
 					 meanMMDD[::step],
 					 meanPMDD[::step], 
-					 color='blue', alpha=0.2, label='MDD St.Dev')
+					 color='green', alpha=0.2, label='MDD St.Dev')
 	
 	plt.title(title)
 	plt.xlabel('Time')
@@ -89,18 +95,21 @@ def make_rolling_figure_2grp(mean_data, std_data, saveDir, nameFile, title="Aver
 	#plt.show()
 	plt.savefig(f"{nameFile}.png")
 
-def make_average_time_plots(roi_data, saveDir):
-	
-	#for anROI in range(0,len(roi_data)):
-	for anROI in range(0,1):
+def make_average_time_plots(roi_data, saveDir, standardize=True):
+	for anROI in range(0,len(roi_data)):
+		print(f"Average {anROI}")
 		df = roi_data[anROI]
 		corr_matrix = df.corr()
-		plt.figure()
-		heatplot = sns.heatmap(corr_matrix, annot=False, cmap='coolwarm')
-		fig = heatplot.get_figure()
-		fig.savefig(f"corr_{anROI}.png")
+		#plt.figure()
+		#heatplot = sns.heatmap(corr_matrix, annot=False, cmap='coolwarm')
+		#fig = heatplot.get_figure()
+		#fig.savefig(f"corr_{anROI}.png")
 		
-		group_data = df.transpose()
+		if standardize == True:
+			stdZ_data = standardizeData(df)
+			group_data = stdZ_data.transpose()
+		else:
+			group_data = df.transpose()
 		#the columns at this point say ???_??_freq
 		
 		group_data['subject_number'] = group_data.index.str.split('_').str[0].astype(int)
@@ -116,8 +125,10 @@ def make_average_time_plots(roi_data, saveDir):
 		
 		make_rolling_figure_2grp(groupmean, groupstd, saveDir, f"group_plot_{anROI}")
 		
+		
 def make_correlation_time_plots(roi_data, saveDir):
-	for anROI in range(0,1):
+	for anROI in range(0,len(roi_data)):
+		print(f"Corrlate {anROI}")
 		df = roi_data[anROI]
 		
 		group_data = df.transpose()
@@ -143,28 +154,37 @@ def make_correlation_time_plots(roi_data, saveDir):
 		HV_data_t = HV_data.transpose()
 		
 		#rolling rolling rolling on an average
-		print("making rolling")
 		
-		roll_corr_HV = HV_data_t.rolling(window=5).corr()
+		ftoz = False
+		
+		roll_corr_HV = HV_data_t.rolling(window=10).corr()
 		roll_corr_HV.index.names = ['A','B']
-		roll_corr_HV_Z = roll_corr_HV.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		if ftoz == True:
+			roll_corr_HV_Z = roll_corr_HV.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		else:
+			roll_corr_HV_Z = roll_corr_HV
 		
-		roll_corr_MD = MD_data_t.rolling(window=5).corr()
+		roll_corr_MD = MD_data_t.rolling(window=10).corr()
 		roll_corr_MD.index.names = ['A','B']
-		roll_corrMD_Z = roll_corr_MD.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		
+		if ftoz == True:
+			roll_corrMD_Z = roll_corr_MD.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
+		else:
+			roll_corrMD_Z = roll_corr_MD
 		
 		roll_corr_aveHV = roll_corr_HV_Z.groupby(level='A').mean()
-		roll_corr_stdHV = roll_corr_HV_Z.groupby(level='A').std()
+		#roll_corr_stdHV = roll_corr_HV_Z.groupby(level='A').std() 
+		roll_corr_stdHV = roll_corr_aveHV.sem(axis=1) #we actually care about standard deviation across values already averaged
 		
 		roll_corr_aveMD = roll_corrMD_Z.groupby(level='A').mean()
-		roll_corr_stdMD = roll_corrMD_Z.groupby(level='A').std()
+		#roll_corr_stdMD = roll_corrMD_Z.groupby(level='A').std()
+		roll_corr_stdMD = roll_corr_aveMD.std(axis=1) #we actually care about standard deviation across values already averaged
 		
-		print("making average")
 		ra_HV = roll_corr_aveHV.mean(axis=1) 
-		rs_HV = roll_corr_stdHV.mean(axis=1)
+		rs_HV = roll_corr_stdHV #roll_corr_stdHV.mean(axis=1)
 		
 		ra_MD = roll_corr_aveMD.mean(axis=1)
-		rs_MD = roll_corr_stdMD.mean(axis=1)
+		rs_MD = roll_corr_stdMD #roll_corr_stdMD.mean(axis=1)
 		
 		groupmean = pd.DataFrame({'MD': ra_MD, 'HV': ra_HV})
 		groupstd = pd.DataFrame({'MD': rs_MD, 'HV': rs_HV})
@@ -230,7 +250,7 @@ def main():
 	parser.add_argument(
 		'--outputDir',
 		help='Output directory for files',
-		default='tmpOut'
+		default='./tmpOut'
 	)
 	
 
