@@ -76,7 +76,7 @@ def main():
     print(freq)
 
     createScriptFile(freq)
-    #prepareFiles(freq)
+    prepareFiles(freq)
 
 
 if __name__ == '__main__':
