@@ -29,6 +29,7 @@ Misc
 	- helpful if you want to transform freesurfer aparc files to decimated surfaces
 
 Subject
+
 	0-setup_sources.py: wrapper script to create source models
 	- Assumes you've already run Freesurfer on anatomical MRIs
 	- Has options for EEG or MEG conductivity
