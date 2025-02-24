@@ -2,6 +2,7 @@
 Code for processing MEG data in Ballard et al. 2025 (currently in prep)
 
 Group
+
 	0-preproc_gifti.py: preprocesses GIFTI surfaces
 	- creates processing bash script
 	- censors out time points with more than 15% of outliers
