@@ -60,7 +60,7 @@ def filtsubj(subject):
 def main():
     parser = argparse.ArgumentParser(
         prog="3-freq-fit.py",
-        description="source analysis by frequeny band",
+        description="Filters and downsamples MEG data by frequeny band",
         epilog="convenience functions by P Molfese"
     )
 

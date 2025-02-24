@@ -16,7 +16,6 @@ def parseRunNum(filename):
      return outname
 
 
-
 def cleanSubj(subj):
     subject = subj
     subjects_dir="/Users/molfesepj/Library/CloudStorage/OneDrive-NationalInstitutesofHealth/Projects/Ballard_MEG/data/freesurfer"
@@ -28,12 +27,7 @@ def cleanSubj(subj):
     moviefiles = glob.glob("*movieclips*.ds")
     moviefiles.sort()
     print(moviefiles)
-    #should be the same for each so going to use first
-    #icaFile(subj, moviefiles[0])
-    #for aMovie in moviefiles:
-    #     icaFile(aMovie)
 
-    # fileInput = moviefiles[0]
     for fileInput in moviefiles:
         movieNum = parseRunNum(fileInput)
 
@@ -100,8 +94,8 @@ def cleanSubj(subj):
 def main():
     parser = argparse.ArgumentParser(
         prog="2-ica_clean.py",
-        description="cleans task and empty room data with ICA",
-        epilog="convenience functions by P Molfese"
+        description="Cleans task and empty room data with ICA",
+        epilog="Convenience functions by P Molfese"
     )
 
     parser.add_argument(

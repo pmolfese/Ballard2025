@@ -99,7 +99,7 @@ def preprocSubj(subj):
 def main():
     parser = argparse.ArgumentParser(
         prog="1-preprocess.py",
-        description="Does some alignment stuff",
+        description="Does alignment of MEG and Freesurfer data",
         epilog="convenience functions by P Molfese"
     )
 
