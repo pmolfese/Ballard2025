@@ -1,7 +1,7 @@
 # Ballard2025
 Code for processing MEG data in Ballard et al. 2025 (currently in prep)
 
-Group
+Group Scripts:
 
 	0-preproc_gifti.py: preprocesses GIFTI surfaces
 	- creates processing bash script
@@ -23,13 +23,13 @@ Group
 	3-make_ISC.py: Creates 3dISC command
 	- Takes list of story number, frequency and makes required file
 	
-Misc
+Misc Scripts:
 
 	suma_align_mne.py: aligns decimated surface with high-res corresponding one
 	- used in earlier pipelines, not necessary if warping to fsaverage in MNE
 	- helpful if you want to transform freesurfer aparc files to decimated surfaces
 
-Subject
+Subject Scripts
 
 	0-setup_sources.py: wrapper script to create source models
 	- Assumes you've already run Freesurfer on anatomical MRIs
