@@ -24,6 +24,7 @@ Group
 	- Takes list of story number, frequency and makes required file
 	
 Misc
+
 	suma_align_mne.py: aligns decimated surface with high-res corresponding one
 	- used in earlier pipelines, not necessary if warping to fsaverage in MNE
 	- helpful if you want to transform freesurfer aparc files to decimated surfaces
