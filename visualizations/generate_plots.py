@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import os
@@ -26,8 +26,8 @@ def readROIFiles(filesArr, ROInumber):
 	renamedList = [x.replace('.txt','') for x in filesArr]
 	renamedList = [x.replace('_std','') for x in renamedList]
 	renamedList = [x.replace('_std','') for x in renamedList]
-	renamedList = [x.replace(f"-lh",'') for x in renamedList]
-	renamedList = [x.replace(f"-rh",'') for x in renamedList]
+	renamedList = [x.replace("-lh",'') for x in renamedList]
+	renamedList = [x.replace("-rh",'') for x in renamedList]
 	my_col.columns = renamedList
 	#print(renamedList)
 	
@@ -35,7 +35,7 @@ def readROIFiles(filesArr, ROInumber):
 
 
 def parsedata(freq, storyNum, hemi):
-	all_files = 	glob(f"*_{storyNum}_{freq}_std-{hemi}.txt")
+	all_files = glob.glob(f"*_{storyNum}_{freq}_std-{hemi}.txt")
 	all_files.sort()
 	
 	numROIs = getShapeFile(all_files[0])
@@ -99,13 +99,13 @@ def make_average_time_plots(roi_data, saveDir, standardize=True):
 	for anROI in range(0,len(roi_data)):
 		print(f"Average {anROI}")
 		df = roi_data[anROI]
-		corr_matrix = df.corr()
+		#corr_matrix = df.corr()
 		#plt.figure()
 		#heatplot = sns.heatmap(corr_matrix, annot=False, cmap='coolwarm')
 		#fig = heatplot.get_figure()
 		#fig.savefig(f"corr_{anROI}.png")
 		
-		if standardize == True:
+		if standardize:
 			stdZ_data = standardizeData(df)
 			group_data = stdZ_data.transpose()
 		else:
@@ -159,7 +159,7 @@ def make_correlation_time_plots(roi_data, saveDir):
 		
 		roll_corr_HV = HV_data_t.rolling(window=10).corr()
 		roll_corr_HV.index.names = ['A','B']
-		if ftoz == True:
+		if ftoz:
 			roll_corr_HV_Z = roll_corr_HV.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
 		else:
 			roll_corr_HV_Z = roll_corr_HV
@@ -167,7 +167,7 @@ def make_correlation_time_plots(roi_data, saveDir):
 		roll_corr_MD = MD_data_t.rolling(window=10).corr()
 		roll_corr_MD.index.names = ['A','B']
 		
-		if ftoz == True:
+		if ftoz:
 			roll_corrMD_Z = roll_corr_MD.map(lambda r: np.arctanh(r) if -1 < r < 1 else np.nan) #fisher transform Z
 		else:
 			roll_corrMD_Z = roll_corr_MD
@@ -274,7 +274,7 @@ def main():
 	roi_data = parsedata(freq, storyNum, hemi)
 	os.chdir(cwd)
 	
-	if saveROIs == True:
+	if saveROIs:
 		saveROIfiles(roi_data, outputDir, freq, hemi)
 	
 	make_average_time_plots(roi_data, outputDir)
