@@ -14,6 +14,7 @@ def getShapeFile(aFile):
 	return tmp.shape[1]
 	
 def readROIFiles(filesArr, ROInumber):
+	#not efficient, but easy to retain names of files as cols
 	my_col = pd.DataFrame()
 	for aFile in filesArr:
 		df = pd.read_csv(aFile, sep='\t', header=None)
