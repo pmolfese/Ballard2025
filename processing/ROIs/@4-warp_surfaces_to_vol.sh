@@ -23,10 +23,11 @@ surface_to_roi_volume() {
     frequency=$4
     @surf_to_vol_spackle \
         -spec ../suma_MNI152_2009/std.141.MNI152_2009_${hemi}.spec \
-        -surfA white \
+        -surfA smoothwm \
+        -surfB pial \
         -surfset ${folder}/std.141.ISC_${hemi}_${frequency}_${sign}_ClstMsk_e2_a255.0.niml.dset \
         -prefix ISC_${hemi}_${frequency}_${sign}_ClstMsk_e2_a255 \
-        -maskset MNI_Mask.nii -datum byte
+        -maskset ../suma_MNI152_2009/${hemi}.ribbon.nii.gz -datum byte
 }
 
 # Function to run whereami for a hemisphere, sign, and frequency
